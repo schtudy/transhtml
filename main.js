@@ -2,15 +2,17 @@ import { CONFIG } from './config.js';
 import { $, setStatus, toast, initTabs, formatBytes } from './modules/ui.js';
 import { normalizeUrl, fetchPage } from './modules/fetcher.js';
 import { convertHtml, guessTitle } from './modules/converter.js';
-import { renderPreview, printPreview, openInNewTab } from './modules/preview.js';
+import { renderPreview, printPreview, setExpanded } from './modules/preview.js';
 import { downloadHtml } from './modules/download.js';
 import { BOOKMARKLET } from './modules/bookmarklet.js';
+import { SAMPLE_HTML } from './modules/samples.js';
 
 const state = { raw: '', baseUrl: '', html: '' };
 const el = {
   tool: $('#tool'), urlForm: $('#url-form'), url: $('#url-input'), urlBtn: $('#url-btn'),
   pasteForm: $('#paste-form'), paste: $('#paste-input'), file: $('#file-input'), pasteBase: $('#paste-base'),
-  status: $('#status'), result: $('#result'), frame: $('#preview'), name: $('#filename'), meta: $('#result-meta'),
+  status: $('#status'), result: $('#result'), frame: $('#preview'), frameBox: $('#preview-box'),
+  name: $('#filename'), meta: $('#result-meta'),
   opts: ['#opt-scripts', '#opt-abs', '#opt-print'].map(s => $(s)),
 };
 
@@ -31,7 +33,7 @@ function load(raw, baseUrl) {
   Object.assign(state, { raw, baseUrl });
   el.name.value = guessTitle(raw);
   build();
-  setStatus(el.status, '변환했습니다. 아래 미리보기를 확인하고 저장하세요.', 'ok');
+  setStatus(el.status, '변환했습니다. 미리보기를 확인하고 저장하세요.', 'ok');
   el.result.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
@@ -59,6 +61,12 @@ el.pasteForm.addEventListener('submit', e => {
   } catch (err) { setStatus(el.status, err.message, 'error'); }
 });
 
+$('#btn-sample').addEventListener('click', () => {
+  el.paste.value = SAMPLE_HTML;
+  el.pasteBase.value = '';
+  load(SAMPLE_HTML, '');
+});
+
 el.file.addEventListener('change', async () => {
   const f = el.file.files[0]; if (!f) return;
   el.paste.value = await f.text();
@@ -67,9 +75,19 @@ el.file.addEventListener('change', async () => {
 
 el.opts.forEach(o => o.addEventListener('change', build));
 
-$('#btn-download').addEventListener('click', () => { downloadHtml(state.html, el.name.value); toast('다운로드를 시작했습니다'); });
-$('#btn-open').addEventListener('click', () => { if (!openInNewTab(state.html)) toast('팝업이 차단되었습니다'); });
-$('#btn-print').addEventListener('click', () => { if (!printPreview(el.frame)) openInNewTab(state.html); });
+const btnDl = $('#btn-download');
+btnDl.addEventListener('click', async () => {
+  btnDl.disabled = true;
+  try {
+    const r = await downloadHtml(state.html, el.name.value);
+    toast(r === 'saved' ? '파일을 저장했습니다' : '저장을 취소했습니다');
+  } catch (err) { setStatus(el.status, err.message, 'error'); }
+  finally { btnDl.disabled = false; }
+});
+$('#btn-expand').addEventListener('click', () => setExpanded(el.frameBox, true));
+$('#btn-close').addEventListener('click', () => setExpanded(el.frameBox, false));
+addEventListener('keydown', e => { if (e.key === 'Escape') setExpanded(el.frameBox, false); });
+$('#btn-print').addEventListener('click', () => { if (!printPreview(el.frame)) toast('이 화면에서는 인쇄할 수 없습니다. 저장한 파일을 열어 인쇄하세요'); });
 
 // 저장 버튼(북마클릿)
 const bm = $('#bm-link');
@@ -78,5 +96,5 @@ bm.addEventListener('click', e => { e.preventDefault(); toast('즐겨찾기에 �
 $('#bm-copy').addEventListener('click', async () => {
   const box = $('#bm-code');
   try { await navigator.clipboard.writeText(BOOKMARKLET); toast('코드를 복사했습니다'); }
-  catch { box.hidden = false; box.value = BOOKMARKLET; box.select(); }
+  catch { box.hidden = false; box.value = BOOKMARKLET; box.select(); toast('아래 코드를 길게 눌러 복사하세요'); }
 });

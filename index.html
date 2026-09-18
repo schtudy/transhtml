@@ -79,7 +79,10 @@
       <label class="field"><span>원본 주소 (선택)</span>
         <input type="url" id="paste-base" placeholder="이미지·스타일 경로를 살릴 때 입력">
       </label>
-      <button class="btn btn--primary" type="submit">변환하기</button>
+      <div class="btn-row">
+        <button class="btn btn--primary" type="submit">변환하기</button>
+        <button class="btn" id="btn-sample" type="button">예시 문서로 해보기</button>
+      </div>
     </form>
   </div>
 
@@ -97,11 +100,14 @@
   <label class="field"><span>파일 이름</span><input type="text" id="filename"></label>
   <div class="btn-row">
     <button class="btn btn--blue" id="btn-download" type="button">HTML 파일 저장</button>
-    <button class="btn" id="btn-open" type="button">새 탭에서 열기</button>
+    <button class="btn" id="btn-expand" type="button">크게 보기</button>
     <button class="btn" id="btn-print" type="button">인쇄 · PDF</button>
   </div>
   <p class="meta" id="result-meta"></p>
-  <iframe class="preview-frame" id="preview" title="변환 결과 미리보기" sandbox="allow-same-origin allow-modals"></iframe>
+  <div class="preview-box" id="preview-box">
+    <button class="btn preview-close" id="btn-close" type="button">닫기</button>
+    <iframe class="preview-frame" id="preview" title="변환 결과 미리보기" sandbox="allow-same-origin allow-modals"></iframe>
+  </div>
 </section>
 
 <section class="callout" id="bookmarklet" aria-labelledby="bm-title">
